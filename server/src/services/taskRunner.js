@@ -91,7 +91,8 @@ class TaskRunner {
     this.childProcess = spawn(claudePath, args, {
       cwd: repoPath,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env }
+      env: { ...process.env },
+      shell: true
     });
 
     let fullOutput = '';
