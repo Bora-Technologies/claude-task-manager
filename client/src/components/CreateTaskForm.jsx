@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
+import SearchableDropdown from './SearchableDropdown'
 
 function CreateTaskForm({ onCreated }) {
   const [repos, setRepos] = useState([])
@@ -11,6 +12,11 @@ function CreateTaskForm({ onCreated }) {
   useEffect(() => {
     api.getRepos().then(setRepos).catch(console.error)
   }, [])
+
+  const repoOptions = [
+    { value: '_general', label: 'General (clone/setup tasks)' },
+    ...repos.map(r => ({ value: r.alias, label: r.alias }))
+  ]
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -34,13 +40,12 @@ function CreateTaskForm({ onCreated }) {
       <h2>New Task</h2>
       <form onSubmit={handleSubmit}>
         <div className="form-row">
-          <select value={repo} onChange={(e) => setRepo(e.target.value)} required>
-            <option value="">Select repo...</option>
-            <option value="_general">General (clone/setup tasks)</option>
-            {repos.map(r => (
-              <option key={r.alias} value={r.alias}>{r.alias}</option>
-            ))}
-          </select>
+          <SearchableDropdown
+            options={repoOptions}
+            value={repo}
+            onChange={setRepo}
+            placeholder="Select repo..."
+          />
           <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             Priority:
             <input
