@@ -61,6 +61,19 @@ router.patch('/:alias', async (req, res) => {
     const { path, description, tags, isActive } = req.body;
     const updates = {};
 
+    // Handle alias change
+    if (req.body.alias !== undefined) {
+      const newAlias = req.body.alias.toLowerCase().trim();
+      if (newAlias !== req.params.alias.toLowerCase()) {
+        // Check if new alias already exists
+        const existing = await Repo.findOne({ alias: newAlias });
+        if (existing) {
+          return res.status(400).json({ error: 'Alias already exists' });
+        }
+        updates.alias = newAlias;
+      }
+    }
+
     if (path !== undefined) {
       if (!existsSync(path)) {
         return res.status(400).json({ error: 'Path does not exist' });

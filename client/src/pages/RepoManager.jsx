@@ -67,6 +67,7 @@ function RepoManager() {
   async function handleUpdate(oldAlias) {
     try {
       await api.updateRepo(oldAlias, {
+        alias: editAlias.trim().toLowerCase(),
         description: editDescription,
         notes: editNotes
       })
@@ -127,7 +128,14 @@ function RepoManager() {
               {editingRepo === repo.alias ? (
                 <div>
                   <div className="form-row" style={{ marginBottom: 12 }}>
-                    <strong>{repo.alias}</strong>
+                    <input
+                      type="text"
+                      placeholder="Alias"
+                      value={editAlias}
+                      onChange={(e) => setEditAlias(e.target.value)}
+                      style={{ fontWeight: 'bold' }}
+                      required
+                    />
                   </div>
                   <div className="form-row" style={{ marginBottom: 12 }}>
                     <input
