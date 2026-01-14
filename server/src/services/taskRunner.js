@@ -329,6 +329,13 @@ class TaskRunner {
   }
 
   async resolveRepoPath(repoAlias) {
+    const reposBase = process.env.REPOS_BASE || '/home/ubuntu/repos';
+
+    // Handle general/system tasks (clone, setup, etc.)
+    if (repoAlias === '_general') {
+      return reposBase;
+    }
+
     // Check if it's a registered alias
     const repo = await Repo.findOne({ alias: repoAlias.toLowerCase(), isActive: true });
     if (repo) return repo.path;
@@ -339,7 +346,6 @@ class TaskRunner {
     }
 
     // Try repos base path
-    const reposBase = process.env.REPOS_BASE || '/home/ubuntu/repos';
     return `${reposBase}/${repoAlias}`;
   }
 

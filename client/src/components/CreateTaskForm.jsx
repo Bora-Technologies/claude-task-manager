@@ -36,6 +36,7 @@ function CreateTaskForm({ onCreated }) {
         <div className="form-row">
           <select value={repo} onChange={(e) => setRepo(e.target.value)} required>
             <option value="">Select repo...</option>
+            <option value="_general">General (clone/setup tasks)</option>
             {repos.map(r => (
               <option key={r.alias} value={r.alias}>{r.alias}</option>
             ))}
