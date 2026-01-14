@@ -88,11 +88,12 @@ class TaskRunner {
     console.log(`[TaskRunner] Running: ${claudePath} ${args.join(' ')}`);
     console.log(`[TaskRunner] CWD: ${repoPath}`);
 
+    // Note: shell: false (default) to avoid prompt being interpreted by shell
+    // Arguments are passed directly to the executable
     this.childProcess = spawn(claudePath, args, {
       cwd: repoPath,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-      shell: true
+      env: { ...process.env }
     });
 
     let fullOutput = '';
