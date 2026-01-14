@@ -38,6 +38,7 @@ export const api = {
   // Repos
   getRepos: () => request('/repos'),
   createRepo: (data) => request('/repos', { method: 'POST', body: JSON.stringify(data) }),
+  updateRepo: (alias, data) => request(`/repos/${alias}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteRepo: (alias) => request(`/repos/${alias}`, { method: 'DELETE' }),
 
   // System

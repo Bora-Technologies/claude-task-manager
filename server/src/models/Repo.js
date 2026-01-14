@@ -18,6 +18,7 @@ const repoSchema = new mongoose.Schema({
   successCount: { type: Number, default: 0 },
   failCount: { type: Number, default: 0 },
   description: { type: String },
+  notes: { type: String },
   tags: [{ type: String }]
 }, { timestamps: true });
 

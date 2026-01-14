@@ -7,6 +7,10 @@ function RepoManager() {
   const [alias, setAlias] = useState('')
   const [path, setPath] = useState('')
   const [description, setDescription] = useState('')
+  const [editingRepo, setEditingRepo] = useState(null)
+  const [editAlias, setEditAlias] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editNotes, setEditNotes] = useState('')
 
   useEffect(() => {
     loadRepos()
@@ -43,6 +47,33 @@ function RepoManager() {
       loadRepos()
     } catch (err) {
       alert('Failed to delete: ' + err.message)
+    }
+  }
+
+  function startEdit(repo) {
+    setEditingRepo(repo.alias)
+    setEditAlias(repo.alias)
+    setEditDescription(repo.description || '')
+    setEditNotes(repo.notes || '')
+  }
+
+  function cancelEdit() {
+    setEditingRepo(null)
+    setEditAlias('')
+    setEditDescription('')
+    setEditNotes('')
+  }
+
+  async function handleUpdate(oldAlias) {
+    try {
+      await api.updateRepo(oldAlias, {
+        description: editDescription,
+        notes: editNotes
+      })
+      cancelEdit()
+      loadRepos()
+    } catch (err) {
+      alert('Failed to update: ' + err.message)
     }
   }
 
@@ -93,27 +124,72 @@ function RepoManager() {
         <div className="task-list">
           {repos.map(repo => (
             <div key={repo.alias} className="task-card">
-              <div className="task-header">
-                <strong>{repo.alias}</strong>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => handleDelete(repo.alias)}
-                  style={{ padding: '4px 8px', fontSize: 12 }}
-                >
-                  Delete
-                </button>
-              </div>
-              <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#8b949e' }}>
-                {repo.path}
-              </div>
-              {repo.description && (
-                <div style={{ marginTop: 8, fontSize: 14 }}>{repo.description}</div>
+              {editingRepo === repo.alias ? (
+                <div>
+                  <div className="form-row" style={{ marginBottom: 12 }}>
+                    <strong>{repo.alias}</strong>
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 12 }}>
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 12 }}>
+                    <textarea
+                      placeholder="Notes (e.g., tech stack, important files, context for Claude)"
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      style={{ flex: 1, minHeight: 80 }}
+                    />
+                  </div>
+                  <div className="form-row" style={{ justifyContent: 'flex-end', gap: 8 }}>
+                    <button className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
+                    <button className="btn btn-primary" onClick={() => handleUpdate(repo.alias)}>Save</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="task-header">
+                    <strong>{repo.alias}</strong>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => startEdit(repo)}
+                        style={{ padding: '4px 8px', fontSize: 12 }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        onClick={() => handleDelete(repo.alias)}
+                        style={{ padding: '4px 8px', fontSize: 12 }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 13, color: '#8b949e' }}>
+                    {repo.path}
+                  </div>
+                  {repo.description && (
+                    <div style={{ marginTop: 8, fontSize: 14 }}>{repo.description}</div>
+                  )}
+                  {repo.notes && (
+                    <div style={{ marginTop: 8, fontSize: 13, color: '#8b949e', whiteSpace: 'pre-wrap' }}>
+                      Notes: {repo.notes}
+                    </div>
+                  )}
+                  <div className="task-meta" style={{ marginTop: 8 }}>
+                    <span>Tasks: {repo.taskCount}</span>
+                    <span>Success: {repo.successCount}</span>
+                    <span>Failed: {repo.failCount}</span>
+                  </div>
+                </>
               )}
-              <div className="task-meta" style={{ marginTop: 8 }}>
-                <span>Tasks: {repo.taskCount}</span>
-                <span>Success: {repo.successCount}</span>
-                <span>Failed: {repo.failCount}</span>
-              </div>
             </div>
           ))}
         </div>

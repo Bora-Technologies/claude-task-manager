@@ -68,6 +68,7 @@ router.patch('/:alias', async (req, res) => {
       updates.path = path;
     }
     if (description !== undefined) updates.description = description;
+    if (req.body.notes !== undefined) updates.notes = req.body.notes;
     if (tags !== undefined) updates.tags = tags;
     if (isActive !== undefined) updates.isActive = isActive;
 
