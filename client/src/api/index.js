@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 
 async function request(endpoint, options = {}) {
   const response = await fetch(`${API_URL}/api${endpoint}`, {
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers
@@ -44,5 +45,10 @@ export const api = {
   // System
   getSystemStatus: () => request('/system/status'),
   pauseSystem: () => request('/system/pause', { method: 'POST' }),
-  resumeSystem: () => request('/system/resume', { method: 'POST' })
+  resumeSystem: () => request('/system/resume', { method: 'POST' }),
+
+  // Auth
+  login: (password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ password }) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  checkAuth: () => request('/auth/check')
 }

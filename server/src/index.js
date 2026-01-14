@@ -3,6 +3,7 @@ import express from 'express';
 import http from 'http';
 import { Server as SocketIO } from 'socket.io';
 import cors from 'cors';
+import session from 'express-session';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -14,6 +15,7 @@ import repoRoutes from './routes/repos.js';
 import Repo from './models/Repo.js';
 import TaskRunner from './services/taskRunner.js';
 import setupSocketHandlers from './socket/index.js';
+import { requireAuth } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,8 +30,63 @@ const io = new SocketIO(server, {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.WS_CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+
+// Session config
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Auth routes (unprotected)
+app.post('/api/auth/login', (req, res) => {
+  const { password } = req.body;
+  const dashboardPassword = process.env.DASHBOARD_PASSWORD;
+
+  if (!dashboardPassword) {
+    return res.status(500).json({ error: 'DASHBOARD_PASSWORD not configured' });
+  }
+
+  if (password === dashboardPassword) {
+    req.session.authenticated = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ error: 'Invalid password' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'Logout failed' });
+    }
+    res.clearCookie('connect.sid');
+    res.json({ success: true });
+  });
+});
+
+app.get('/api/auth/check', (req, res) => {
+  res.json({ authenticated: !!(req.session && req.session.authenticated) });
+});
+
+// Protect all /api/* routes except /api/auth/*
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth')) {
+    return next();
+  }
+  requireAuth(req, res, next);
+});
 
 // Make io accessible to routes
 app.set('io', io);

@@ -1,12 +1,27 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useSocket } from './context/SocketContext'
+import { useAuth } from './context/AuthContext'
 import Dashboard from './pages/Dashboard'
 import TaskDetail from './pages/TaskDetail'
 import RepoManager from './pages/RepoManager'
+import LoginPage from './pages/LoginPage'
 
 function App() {
   const { connected } = useSocket()
+  const { isAuthenticated, loading, logout } = useAuth()
   const location = useLocation()
+
+  if (loading) {
+    return (
+      <div className="app">
+        <div className="loading-screen">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />
+  }
 
   return (
     <div className="app">
@@ -16,6 +31,7 @@ function App() {
           <span className={`status-badge ${connected ? 'running' : ''}`}>
             {connected ? 'Connected' : 'Disconnected'}
           </span>
+          <button className="logout-btn" onClick={logout}>Logout</button>
         </div>
       </header>
 
