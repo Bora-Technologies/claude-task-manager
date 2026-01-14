@@ -6,10 +6,12 @@ import cors from 'cors';
 import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { readdirSync, statSync, existsSync } from 'fs';
 import { connectDB } from './config/db.js';
 import taskRoutes from './routes/tasks.js';
 import questionRoutes from './routes/questions.js';
 import repoRoutes from './routes/repos.js';
+import Repo from './models/Repo.js';
 import TaskRunner from './services/taskRunner.js';
 import setupSocketHandlers from './socket/index.js';
 
@@ -97,8 +99,50 @@ app.get('*', (req, res, next) => {
   res.sendFile(join(clientDistPath, 'index.html'));
 });
 
+// Auto-scan repos folder and register any git repos found
+async function autoScanRepos() {
+  const reposBase = process.env.REPOS_BASE || '/home/ubuntu/repos';
+
+  if (!existsSync(reposBase)) {
+    console.log('[AutoScan] Repos folder not found:', reposBase);
+    return;
+  }
+
+  try {
+    const entries = readdirSync(reposBase);
+
+    for (const entry of entries) {
+      const fullPath = join(reposBase, entry);
+
+      // Skip if not a directory
+      if (!statSync(fullPath).isDirectory()) continue;
+
+      // Skip if not a git repo
+      if (!existsSync(join(fullPath, '.git'))) continue;
+
+      // Check if already registered
+      const existing = await Repo.findOne({ alias: entry.toLowerCase() });
+      if (existing) continue;
+
+      // Auto-register
+      await Repo.create({
+        alias: entry.toLowerCase(),
+        path: fullPath,
+        description: 'Auto-detected repo'
+      });
+
+      console.log(`[AutoScan] Registered repo: ${entry}`);
+    }
+  } catch (err) {
+    console.error('[AutoScan] Error:', err.message);
+  }
+}
+
 // Connect to MongoDB and start server
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Auto-scan and register repos
+  await autoScanRepos();
+
   // Setup socket handlers
   setupSocketHandlers(io);
 
