@@ -41,6 +41,7 @@ export const api = {
   createRepo: (data) => request('/repos', { method: 'POST', body: JSON.stringify(data) }),
   updateRepo: (alias, data) => request(`/repos/${alias}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteRepo: (alias) => request(`/repos/${alias}`, { method: 'DELETE' }),
+  deployRepo: (alias) => request(`/repos/${alias}/deploy`, { method: 'POST' }),
 
   // System
   getSystemStatus: () => request('/system/status'),

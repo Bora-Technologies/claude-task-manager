@@ -83,7 +83,7 @@ class TaskRunner {
 
     // Spawn Claude process
     const claudePath = process.env.CLAUDE_PATH || 'claude';
-    const args = ['-p', prompt, '--dangerously-skip-permissions'];
+    const args = ['-p', prompt, '--permission-mode', 'bypassPermissions'];
 
     console.log(`[TaskRunner] Running: ${claudePath} ${args.join(' ')}`);
     console.log(`[TaskRunner] CWD: ${repoPath}`);

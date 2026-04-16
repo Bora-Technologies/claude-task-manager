@@ -7,10 +7,14 @@ function RepoManager() {
   const [alias, setAlias] = useState('')
   const [path, setPath] = useState('')
   const [description, setDescription] = useState('')
+  const [deployScript, setDeployScript] = useState('')
   const [editingRepo, setEditingRepo] = useState(null)
   const [editAlias, setEditAlias] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editNotes, setEditNotes] = useState('')
+  const [editDeployScript, setEditDeployScript] = useState('')
+  const [deploying, setDeploying] = useState({})
+  const [deployOutput, setDeployOutput] = useState({})
 
   useEffect(() => {
     loadRepos()
@@ -30,10 +34,11 @@ function RepoManager() {
   async function handleSubmit(e) {
     e.preventDefault()
     try {
-      await api.createRepo({ alias, path, description })
+      await api.createRepo({ alias, path, description, deployScript })
       setAlias('')
       setPath('')
       setDescription('')
+      setDeployScript('')
       loadRepos()
     } catch (err) {
       alert('Failed to add repo: ' + err.message)
@@ -55,6 +60,7 @@ function RepoManager() {
     setEditAlias(repo.alias)
     setEditDescription(repo.description || '')
     setEditNotes(repo.notes || '')
+    setEditDeployScript(repo.deployScript || '')
   }
 
   function cancelEdit() {
@@ -62,6 +68,7 @@ function RepoManager() {
     setEditAlias('')
     setEditDescription('')
     setEditNotes('')
+    setEditDeployScript('')
   }
 
   async function handleUpdate(oldAlias) {
@@ -69,12 +76,26 @@ function RepoManager() {
       await api.updateRepo(oldAlias, {
         alias: editAlias.trim().toLowerCase(),
         description: editDescription,
-        notes: editNotes
+        notes: editNotes,
+        deployScript: editDeployScript
       })
       cancelEdit()
       loadRepos()
     } catch (err) {
       alert('Failed to update: ' + err.message)
+    }
+  }
+
+  async function handleDeploy(repoAlias) {
+    setDeploying(prev => ({ ...prev, [repoAlias]: true }))
+    setDeployOutput(prev => ({ ...prev, [repoAlias]: null }))
+    try {
+      const result = await api.deployRepo(repoAlias)
+      setDeployOutput(prev => ({ ...prev, [repoAlias]: result }))
+    } catch (err) {
+      setDeployOutput(prev => ({ ...prev, [repoAlias]: { success: false, error: err.message, stdout: '', stderr: '' } }))
+    } finally {
+      setDeploying(prev => ({ ...prev, [repoAlias]: false }))
     }
   }
 
@@ -110,6 +131,15 @@ function RepoManager() {
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              style={{ flex: 1 }}
+            />
+          </div>
+          <div className="form-row">
+            <input
+              type="text"
+              placeholder="Deploy script (e.g., git pull && npm install && pm2 restart app)"
+              value={deployScript}
+              onChange={(e) => setDeployScript(e.target.value)}
               style={{ flex: 1 }}
             />
             <button type="submit" className="btn btn-primary">Add Repo</button>
@@ -154,6 +184,15 @@ function RepoManager() {
                       style={{ flex: 1, minHeight: 80 }}
                     />
                   </div>
+                  <div className="form-row" style={{ marginBottom: 12 }}>
+                    <input
+                      type="text"
+                      placeholder="Deploy script (e.g., git pull && npm install && pm2 restart app)"
+                      value={editDeployScript}
+                      onChange={(e) => setEditDeployScript(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
                   <div className="form-row" style={{ justifyContent: 'flex-end', gap: 8 }}>
                     <button className="btn btn-secondary" onClick={cancelEdit}>Cancel</button>
                     <button className="btn btn-primary" onClick={() => handleUpdate(repo.alias)}>Save</button>
@@ -164,6 +203,16 @@ function RepoManager() {
                   <div className="task-header">
                     <strong>{repo.alias}</strong>
                     <div style={{ display: 'flex', gap: 8 }}>
+                      {repo.deployScript && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleDeploy(repo.alias)}
+                          disabled={deploying[repo.alias]}
+                          style={{ padding: '4px 10px', fontSize: 12 }}
+                        >
+                          {deploying[repo.alias] ? 'Deploying...' : 'Deploy'}
+                        </button>
+                      )}
                       <button
                         className="btn btn-secondary"
                         onClick={() => startEdit(repo)}
@@ -186,6 +235,11 @@ function RepoManager() {
                   {repo.description && (
                     <div style={{ marginTop: 8, fontSize: 14 }}>{repo.description}</div>
                   )}
+                  {repo.deployScript && (
+                    <div style={{ marginTop: 6, fontSize: 12, color: '#8b949e', fontFamily: 'monospace' }}>
+                      deploy: {repo.deployScript}
+                    </div>
+                  )}
                   {repo.notes && (
                     <div style={{ marginTop: 8, fontSize: 13, color: '#8b949e', whiteSpace: 'pre-wrap' }}>
                       Notes: {repo.notes}
@@ -196,6 +250,26 @@ function RepoManager() {
                     <span>Success: {repo.successCount}</span>
                     <span>Failed: {repo.failCount}</span>
                   </div>
+                  {deployOutput[repo.alias] && (
+                    <div style={{ marginTop: 12, padding: 12, background: '#0d1117', borderRadius: 6, fontFamily: 'monospace', fontSize: 12 }}>
+                      <div style={{ color: deployOutput[repo.alias].success ? '#3fb950' : '#f85149', fontWeight: 'bold', marginBottom: 6 }}>
+                        {deployOutput[repo.alias].success ? 'Deploy successful' : 'Deploy failed'}
+                      </div>
+                      {deployOutput[repo.alias].stdout && (
+                        <pre style={{ margin: 0, color: '#e6edf3', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {deployOutput[repo.alias].stdout}
+                        </pre>
+                      )}
+                      {deployOutput[repo.alias].stderr && (
+                        <pre style={{ margin: '4px 0 0', color: '#f85149', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {deployOutput[repo.alias].stderr}
+                        </pre>
+                      )}
+                      {deployOutput[repo.alias].error && (
+                        <div style={{ color: '#f85149', marginTop: 4 }}>{deployOutput[repo.alias].error}</div>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>

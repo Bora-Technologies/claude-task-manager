@@ -19,6 +19,7 @@ const repoSchema = new mongoose.Schema({
   failCount: { type: Number, default: 0 },
   description: { type: String },
   notes: { type: String },
+  deployScript: { type: String },
   tags: [{ type: String }]
 }, { timestamps: true });
 

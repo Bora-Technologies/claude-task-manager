@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { existsSync } from 'fs';
+import { exec } from 'child_process';
 import Repo from '../models/Repo.js';
 
 const router = Router();
@@ -39,10 +40,12 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Path does not exist' });
     }
 
+    const { deployScript } = req.body;
     const repo = await Repo.create({
       alias: alias.toLowerCase(),
       path,
       description,
+      deployScript,
       tags
     });
 
@@ -82,6 +85,7 @@ router.patch('/:alias', async (req, res) => {
     }
     if (description !== undefined) updates.description = description;
     if (req.body.notes !== undefined) updates.notes = req.body.notes;
+    if (req.body.deployScript !== undefined) updates.deployScript = req.body.deployScript;
     if (tags !== undefined) updates.tags = tags;
     if (isActive !== undefined) updates.isActive = isActive;
 
@@ -104,6 +108,26 @@ router.delete('/:alias', async (req, res) => {
     const repo = await Repo.findOneAndDelete({ alias: req.params.alias.toLowerCase() });
     if (!repo) return res.status(404).json({ error: 'Repo not found' });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Run deploy script
+router.post('/:alias/deploy', async (req, res) => {
+  try {
+    const repo = await Repo.findOne({ alias: req.params.alias.toLowerCase() });
+    if (!repo) return res.status(404).json({ error: 'Repo not found' });
+    if (!repo.deployScript) return res.status(400).json({ error: 'No deploy script configured for this repo' });
+
+    exec(repo.deployScript, { cwd: repo.path, timeout: 300000 }, (err, stdout, stderr) => {
+      res.json({
+        success: !err,
+        stdout: stdout || '',
+        stderr: stderr || '',
+        error: err ? err.message : null
+      });
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
