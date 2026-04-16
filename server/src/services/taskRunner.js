@@ -1,4 +1,6 @@
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import Task from '../models/Task.js';
 import Question from '../models/Question.js';
 import Repo from '../models/Repo.js';
@@ -269,6 +271,16 @@ class TaskRunner {
     return prompt;
   }
 
+  cleanupNodeModules(repoPath) {
+    const nmPath = join(repoPath, 'node_modules');
+    if (existsSync(nmPath)) {
+      exec(`rm -rf "${nmPath}"`, (err) => {
+        if (err) console.error(`[TaskRunner] Failed to clean node_modules at ${repoPath}:`, err.message);
+        else console.log(`[TaskRunner] Cleaned node_modules at ${repoPath}`);
+      });
+    }
+  }
+
   async completeTask(task, response) {
     console.log(`[TaskRunner] Task completed: ${task.taskId}`);
 
@@ -290,6 +302,9 @@ class TaskRunner {
       completedAt: task.completedAt
     });
     this.io.emit('queue:update', await this.getQueueStats());
+
+    const repoPath = await this.resolveRepoPath(task.repo);
+    if (repoPath) this.cleanupNodeModules(repoPath);
   }
 
   async failTask(task, error, exitCode = 1) {
@@ -308,6 +323,9 @@ class TaskRunner {
 
     this.io.emit('task:failed', { taskId: task.taskId, error, exitCode });
     this.io.emit('queue:update', await this.getQueueStats());
+
+    const repoPath = await this.resolveRepoPath(task.repo);
+    if (repoPath) this.cleanupNodeModules(repoPath);
   }
 
   async cancelTask(taskId) {
