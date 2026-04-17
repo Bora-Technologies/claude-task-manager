@@ -33,9 +33,12 @@ router.get('/bulk-status', async (req, res) => {
     if (ids.length === 0) {
       return res.json({ tasks: [] });
     }
+    if (ids.length > 100) {
+      return res.status(400).json({ error: 'Too many IDs — maximum 100 per request' });
+    }
     const tasks = await Task.find(
       { taskId: { $in: ids } },
-      { taskId: 1, status: 1, response: 1, error: 1, completedAt: 1 }
+      { _id: 0, taskId: 1, status: 1, response: 1, error: 1, completedAt: 1 }
     );
     res.json({ tasks });
   } catch (err) {
