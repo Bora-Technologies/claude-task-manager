@@ -12,6 +12,11 @@ const repoSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    enum: ['git', 'workspace'],
+    default: 'git'
+  },
   isActive: { type: Boolean, default: true },
   lastUsed: { type: Date },
   taskCount: { type: Number, default: 0 },

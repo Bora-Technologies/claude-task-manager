@@ -46,7 +46,8 @@ router.post('/', async (req, res) => {
       path,
       description,
       deployScript,
-      tags
+      tags,
+      type: req.body.type || 'git'
     });
 
     res.status(201).json(repo);
@@ -88,6 +89,7 @@ router.patch('/:alias', async (req, res) => {
     if (req.body.deployScript !== undefined) updates.deployScript = req.body.deployScript;
     if (tags !== undefined) updates.tags = tags;
     if (isActive !== undefined) updates.isActive = isActive;
+    if (req.body.type !== undefined) updates.type = req.body.type;
 
     const repo = await Repo.findOneAndUpdate(
       { alias: req.params.alias.toLowerCase() },
