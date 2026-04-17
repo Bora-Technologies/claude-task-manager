@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import Repo from '../models/Repo.js';
 
 const router = Router();
+const VALID_REPO_TYPES = ['git', 'workspace'];
 
 // List repos
 router.get('/', async (req, res) => {
@@ -38,6 +39,11 @@ router.post('/', async (req, res) => {
     // Check if path exists
     if (!existsSync(path)) {
       return res.status(400).json({ error: 'Path does not exist' });
+    }
+
+    // Validate type if provided
+    if (req.body.type !== undefined && !VALID_REPO_TYPES.includes(req.body.type)) {
+      return res.status(400).json({ error: `type must be one of: ${VALID_REPO_TYPES.join(', ')}` });
     }
 
     const { deployScript } = req.body;
@@ -89,7 +95,12 @@ router.patch('/:alias', async (req, res) => {
     if (req.body.deployScript !== undefined) updates.deployScript = req.body.deployScript;
     if (tags !== undefined) updates.tags = tags;
     if (isActive !== undefined) updates.isActive = isActive;
-    if (req.body.type !== undefined) updates.type = req.body.type;
+    if (req.body.type !== undefined) {
+      if (!VALID_REPO_TYPES.includes(req.body.type)) {
+        return res.status(400).json({ error: `type must be one of: ${VALID_REPO_TYPES.join(', ')}` });
+      }
+      updates.type = req.body.type;
+    }
 
     const repo = await Repo.findOneAndUpdate(
       { alias: req.params.alias.toLowerCase() },
