@@ -26,6 +26,23 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get bulk task status (for polling)
+router.get('/bulk-status', async (req, res) => {
+  try {
+    const ids = req.query.ids ? req.query.ids.split(',').filter(Boolean) : [];
+    if (ids.length === 0) {
+      return res.json({ tasks: [] });
+    }
+    const tasks = await Task.find(
+      { taskId: { $in: ids } },
+      { taskId: 1, status: 1, response: 1, error: 1, completedAt: 1 }
+    );
+    res.json({ tasks });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get single task
 router.get('/:id', async (req, res) => {
   try {
