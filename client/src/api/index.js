@@ -33,6 +33,7 @@ export const api = {
 
   // Questions
   getPendingQuestions: () => request('/questions/pending'),
+  getTaskQuestions: (taskId) => request(`/questions?taskId=${taskId}`),
   answerQuestion: (id, answer) => request(`/questions/${id}/answer`, { method: 'POST', body: JSON.stringify({ answer }) }),
   skipQuestion: (id) => request(`/questions/${id}/skip`, { method: 'POST' }),
 
