@@ -103,6 +103,15 @@ Single-password session auth. `DASHBOARD_PASSWORD` env var is the password. Sess
 | `SESSION_SECRET` | Express session secret |
 | `DASHBOARD_PASSWORD` | Dashboard login password |
 
+## Critical: Working on This Repo via the Task Manager
+
+If you are running as a Claude task inside the task manager itself (i.e., your CWD is `/home/ubuntu/claude-task-manager`), **do NOT restart PM2 or run `pm2 restart claude-api`**. Doing so will kill the process running you and crash the task.
+
+To deploy changes after editing code:
+1. Make your code changes
+2. Build the client only: `cd /home/ubuntu/claude-task-manager/client && npm run build && cd ..`
+3. Do NOT run `bash ~/deploy.sh` or `pm2 restart` — the deploy button on the dashboard will handle the restart after you finish.
+
 ## Production Deployment
 
 Deployed on EC2 at `claude.praneelbora.in`. Managed via PM2 (process name: `claude-api`).
